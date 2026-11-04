@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screen Time & Mind – Mental Health Score Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f8; --card:#ffffff; --ink:#1d2147; --muted:#6b708f; --line:#dfe3f1;
+  --accent:#5b5bd6; --accent-soft:#e8e8fb; --good:#1fb5a3; --mid:#f2a93b; --low:#ef6a6a;
+  --sleep:#5b5bd6; --study:#f2a93b; --move:#1fb5a3; --social:#ef6a6a; --free:#dfe3f1;
+  --head:'Bricolage Grotesque','Trebuchet MS',sans-serif; --body:'DM Sans','Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#12142b; --card:#1b1e3d; --ink:#eceefc; --muted:#9a9fc4; --line:#2e3260; --accent:#8c8cf5; --accent-soft:#2a2d5e; --free:#2e3260}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body)}
+.wrap{max-width:1120px;margin:0 auto;padding:32px 20px 56px}
+header{margin-bottom:28px}
+h1{font:800 clamp(2rem,5vw,3.2rem)/1.05 var(--head);margin:0 0 8px;letter-spacing:-.02em}
+header p{margin:0;color:var(--muted);max-width:56ch}
+.grid{display:grid;grid-template-columns:1fr;gap:24px;align-items:start}
+@media(min-width:920px){.grid{grid-template-columns:1.25fr 1fr}.result{position:sticky;top:20px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px}
+fieldset{border:0;padding:0;margin:0 0 26px}
+legend,.lbl{font:700 1.05rem var(--head);margin-bottom:10px;padding:0}
+.row{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:560px){.row.two{grid-template-columns:1fr 1fr}}
+label.f{display:block;font-weight:500;font-size:.92rem;color:var(--muted);margin-bottom:6px}
+input[type=number],input[type=text]{width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+input:focus-visible,button:focus-visible,.opt input:focus-visible+span,input[type=range]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* option buttons */
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.opt span{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--bg);font-weight:500;font-size:.93rem;transition:transform .12s,background .12s,border-color .12s}
+.opt:hover span{border-color:var(--accent)}
+.opt input:checked+span{background:var(--accent);border-color:var(--accent);color:#fff;transform:scale(1.04)}
+.opt input:active+span{transform:scale(.96)}
+/* sliders */
+.sl{margin-bottom:16px}
+.sl .top{display:flex;justify-content:space-between;align-items:baseline}
+.sl .top b{font:700 1.1rem var(--head);color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px;cursor:pointer}
+/* day bar */
+.day{display:flex;height:26px;border-radius:13px;overflow:hidden;background:var(--free);margin:6px 0 10px}
+.day i{display:block;transition:width .35s cubic-bezier(.3,.8,.3,1)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.84rem;color:var(--muted)}
+.legend em{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+.legend em:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
+.warn{color:var(--low);font-weight:700;font-size:.9rem;min-height:1.3em;margin:6px 0 0}
+/* actions */
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
+button.go{flex:1;min-width:180px;padding:15px 22px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:700 1.05rem var(--head);cursor:pointer;transition:transform .12s,filter .12s}
+button.go:hover{filter:brightness(1.1)}button.go:active{transform:scale(.97)}
+button.go[disabled]{opacity:.6;cursor:wait}
+button.ghost{padding:14px 18px;border-radius:14px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:500 .95rem var(--body);cursor:pointer}
+button.ghost:hover{border-color:var(--accent)}
+.live{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted);margin-top:14px;cursor:pointer}
+.live input{accent-color:var(--accent);width:18px;height:18px}
+/* result */
+.result{text-align:center}
+.face{font-size:3.2rem;line-height:1;margin-bottom:4px;transition:transform .3s}
+.face.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.35) rotate(-6deg)}}
+.gauge{position:relative;width:100%;max-width:320px;margin:0 auto}
+.gauge svg{width:100%;display:block}
+.track{stroke:var(--free)}
+.arc{transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1),stroke .5s}
+.num{position:absolute;left:0;right:0;bottom:6px;font:800 3.4rem/1 var(--head)}
+.num small{font:500 1rem var(--body);color:var(--muted)}
+.verdict{font:700 1.3rem var(--head);margin:14px 0 4px}
+.msg{color:var(--muted);margin:0 auto;max-width:34ch;min-height:3em}
+.note{font-size:.8rem;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.err{background:color-mix(in srgb,var(--low) 14%,transparent);color:var(--low);border-radius:12px;padding:10px 14px;margin-top:14px;font-size:.9rem;text-align:left;display:none}
+.err.show{display:block}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Screen time &amp; mind</h1>
+    <p>Describe a student’s daily habits and the model estimates their mental health score. Drag the sliders and watch the day fill up.</p>
+  </header>
+
+  <div class="grid">
+    <form class="card" id="form" autocomplete="off">
+      <fieldset>
+        <legend>About the student</legend>
+        <div class="row two">
+          <div><label class="f" for="Age">Age</label><input type="number" id="Age" min="10" max="100" value="20"></div>
+          <div><label class="f" for="Country">Country</label><input type="text" id="Country" list="countries" value="India"></div>
+        </div>
+        <datalist id="countries"></datalist>
+        <div class="row two" style="margin-top:16px">
+          <div><div class="f lbl" style="font:500 .92rem var(--body);color:var(--muted)">Gender</div><div class="opts" id="g-Gender"></div></div>
+          <div><div class="f lbl" style="font:500 .92rem var(--body);color:var(--muted)">Academic level</div><div class="opts" id="g-Academic_Level"></div></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Social media habits</legend>
+        <div class="f lbl" style="font:500 .92rem var(--body);color:var(--muted)">Most used platform</div>
+        <div class="opts" id="g-Most_Used_Platform" style="margin-bottom:16px"></div>
+        <div class="f lbl" style="font:500 .92rem var(--body);color:var(--muted)">Mostly used for</div>
+        <div class="opts" id="g-Purpose_Of_Use" style="margin-bottom:20px"></div>
+        <div id="s-habits"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>A typical day</legend>
+        <div id="s-day"></div>
+        <div class="day" id="day"></div>
+        <div class="legend" id="legend"></div>
+        <p class="warn" id="warn"></p>
+      </fieldset>
+
+      <fieldset style="margin-bottom:6px">
+        <legend>How stressed do they feel?</legend>
+        <div class="opts" id="g-Stress_Level"></div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="go" type="submit" id="go">Predict score</button>
+        <button class="ghost" type="button" id="rand">🎲 Surprise me</button>
+      </div>
+      <label class="live"><input type="checkbox" id="live"> Update the score live as I change things</label>
+    </form>
+
+    <aside class="card result" id="result" aria-live="polite">
+      <div class="face" id="face">🧠</div>
+      <div class="gauge">
+        <svg viewBox="0 0 200 110" aria-hidden="true">
+          <path class="track" d="M15 100 A85 85 0 0 1 185 100" fill="none" stroke-width="16" stroke-linecap="round"/>
+          <path class="arc" id="arc" d="M15 100 A85 85 0 0 1 185 100" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+        </svg>
+        <div class="num"><span id="num">–</span><small> / 10</small></div>
+      </div>
+      <div class="verdict" id="verdict">Ready when you are</div>
+      <p class="msg" id="msg">Fill in the habits on the left and press Predict score.</p>
+      <div class="err" id="err" role="alert"></div>
+      <p class="note">Estimate from a model trained on survey data on a 0–10 scale (higher is better). It is not a diagnosis.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+
+const OPTIONS = {
+  Gender: [['Female','👩'],['Male','👨']],
+  Academic_Level: [['High School','🎒'],['Undergraduate','📚'],['Graduate','🎓']],
+  Most_Used_Platform: [['Instagram','📸'],['TikTok','🎵'],['YouTube','▶️'],['Facebook','👍'],['WhatsApp','💬'],['Snapchat','👻'],['Twitter','🐦'],['LinkedIn','💼'],['WeChat','🟢'],['LINE','🟩'],['KakaoTalk','🟡'],['VKontakte','🔵']],
+  Purpose_Of_Use: [['Entertainment','🍿'],['Education','🧪'],['Networking','🤝'],['News','📰']],
+  Stress_Level: [['Low','😌'],['Medium','😐'],['High','😣'],['Very High','🤯']]
+};
+const DEFAULTS = {Gender:'Female',Academic_Level:'Undergraduate',Most_Used_Platform:'Instagram',Purpose_Of_Use:'Entertainment',Stress_Level:'Medium'};
+const SLIDERS = {
+  habits: [
+    {k:'Avg_Daily_Usage_Hours',t:'Daily social media use',min:0,max:24,step:.5,v:4,u:' h'},
+    {k:'Daily_Unlocks',t:'Phone unlocks per day',min:0,max:300,step:5,v:60,u:''}
+  ],
+  day: [
+    {k:'Sleep_Hours_Per_Night',t:'Sleep per night',min:0,max:24,step:.5,v:7,u:' h'},
+    {k:'Study_Hours',t:'Study time',min:0,max:24,step:.5,v:3,u:' h'},
+    {k:'Physical_Activity_Hours',t:'Physical activity',min:0,max:24,step:.5,v:1,u:' h'}
+  ]
+};
+const COUNTRIES = ['India','USA','Canada','Australia','UK','Germany','Mexico','Turkey','France','Spain','Brazil','Japan','South Korea','China','Russia','Italy','Nigeria','Pakistan','Bangladesh','Nepal'];
+
+const $ = id => document.getElementById(id);
+const state = {...DEFAULTS};
+
+// Build option buttons
+for (const [key, list] of Object.entries(OPTIONS)) {
+  $('g-'+key).innerHTML = list.map(([v,e]) =>
+    `<label class="opt"><input type="radio" name="${key}" value="${v}" ${DEFAULTS[key]===v?'checked':''}><span>${e} ${v}</span></label>`).join('');
+  $('g-'+key).addEventListener('change', ev => { state[key] = ev.target.value; changed(); });
+}
+$('countries').innerHTML = COUNTRIES.map(c => `<option value="${c}">`).join('');
+
+// Build sliders
+function buildSliders(target, list) {
+  $(target).innerHTML = list.map(s => `
+    <div class="sl"><div class="top"><label class="f" for="${s.k}" style="margin:0">${s.t}</label><b id="o-${s.k}"></b></div>
+    <input type="range" id="${s.k}" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.v}"></div>`).join('');
+}
+buildSliders('s-habits', SLIDERS.habits);
+buildSliders('s-day', SLIDERS.day);
+const ALL = [...SLIDERS.habits, ...SLIDERS.day];
+ALL.forEach(s => $(s.k).addEventListener('input', changed));
+$('Age').addEventListener('input', changed);
+$('Country').addEventListener('input', changed);
+
+// Day bar
+const PARTS = [['Sleep','Sleep_Hours_Per_Night','--sleep'],['Study','Study_Hours','--study'],['Active','Physical_Activity_Hours','--move'],['Social media','Avg_Daily_Usage_Hours','--social']];
+function drawDay() {
+  let used = 0, html = '', leg = '';
+  PARTS.forEach(([name,k,c]) => {
+    const h = +$(k).value; used += h;
+    html += `<i style="width:${h/24*100}%;background:var(${c})"></i>`;
+    leg += `<em style="--c:var(${c})">${name} ${h} h</em>`;
+  });
+  const free = Math.max(0, 24 - used);
+  $('day').innerHTML = html;
+  $('legend').innerHTML = leg + `<em style="--c:var(--free)">Everything else ${free} h</em>`;
+  $('warn').textContent = used > 24 ? `That adds up to ${used} hours – a day only has 24. Overlap is fine, but check the numbers.` : '';
+}
+function drawOutputs() {
+  ALL.forEach(s => $('o-'+s.k).textContent = $(s.k).value + s.u);
+}
+
+let timer;
+function changed() {
+  drawOutputs(); drawDay();
+  if ($('live').checked) { clearTimeout(timer); timer = setTimeout(predict, 400); }
+}
+
+// Prediction
+function payload() {
+  return {
+    Age: parseInt($('Age').value, 10),
+    Gender: state.Gender,
+    Country: $('Country').value.trim() || 'Other',
+    Academic_Level: state.Academic_Level,
+    Most_Used_Platform: state.Most_Used_Platform,
+    Purpose_Of_Use: state.Purpose_Of_Use,
+    Avg_Daily_Usage_Hours: +$('Avg_Daily_Usage_Hours').value,
+    Daily_Unlocks: parseInt($('Daily_Unlocks').value, 10),
+    Study_Hours: +$('Study_Hours').value,
+    Physical_Activity_Hours: +$('Physical_Activity_Hours').value,
+    Sleep_Hours_Per_Night: +$('Sleep_Hours_Per_Night').value,
+    Stress_Level: state.Stress_Level
+  };
+}
+function showError(text) { $('err').textContent = text; $('err').classList.add('show'); }
+
+async function predict() {
+  $('err').classList.remove('show');
+  const btn = $('go'); btn.disabled = true; btn.textContent = 'Thinking…';
+  try {
+    const res = await fetch(API + '/predict', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload())});
+    if (!res.ok) {
+      let detail = '';
+      try { const j = await res.json(); detail = Array.isArray(j.detail) ? j.detail.map(d => `${d.loc.slice(1).join('.')}: ${d.msg}`).join('; ') : ''; } catch(e) {}
+      throw new Error(detail || `The API answered with status ${res.status}. Check the uvicorn terminal for the traceback.`);
+    }
+    const data = await res.json();
+    showScore(data.predicted_mental_health_score);
+  } catch (e) {
+    showError(e instanceof TypeError ? `Can’t reach the API at ${API}. Start it with: uvicorn app:app --reload` : e.message);
+  } finally { btn.disabled = false; btn.textContent = 'Predict score'; }
+}
+
+const BANDS = [
+  [0, 4, '🥺', 'Needs attention', 'This mix of habits is linked with a lower score. Sleep and screen time are the easiest places to start.', '--low'],
+  [4, 6, '😕', 'Below average', 'Some habits are pulling the score down. Try nudging sleep up or screen time down and watch it move.', '--mid'],
+  [6, 8, '🙂', 'Doing fine', 'A fairly balanced picture. Small tweaks could still push it higher.', '--good'],
+  [8, 11, '🤩', 'Thriving', 'Healthy habits all round. Keep this balance going.', '--good']
+];
+function showScore(score) {
+  const band = BANDS.find(b => score >= b[0] && score < b[1]) || BANDS[3];
+  const clamped = Math.max(0, Math.min(10, score));
+  $('arc').style.strokeDashoffset = 100 - clamped * 10;
+  $('arc').style.stroke = `var(${band[5]})`;
+  $('face').textContent = band[2];
+  $('face').classList.remove('pop'); void $('face').offsetWidth; $('face').classList.add('pop');
+  $('verdict').textContent = band[3]; $('msg').textContent = band[4];
+  const start = parseFloat($('num').textContent) || 0, t0 = performance.now();
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  (function tick(now) {
+    const p = reduce ? 1 : Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3);
+    $('num').textContent = (start + (score - start) * e).toFixed(2);
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+// Surprise me
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function setRadio(key, val) { state[key] = val; document.querySelector(`input[name="${key}"][value="${val}"]`).checked = true; }
+$('rand').addEventListener('click', () => {
+  for (const k of Object.keys(OPTIONS)) setRadio(k, pick(OPTIONS[k])[0]);
+  $('Age').value = 16 + Math.floor(Math.random() * 14);
+  $('Country').value = pick(COUNTRIES);
+  ALL.forEach(s => { const n = (s.max / s.step) * (s.k === 'Daily_Unlocks' ? .5 : s.max > 100 ? 1 : .35); $(s.k).value = Math.min(s.max, Math.round(Math.random() * n) * s.step); });
+  drawOutputs(); drawDay(); predict();
+});
+
+$('form').addEventListener('submit', e => { e.preventDefault(); predict(); });
+drawOutputs(); drawDay();
+</script>
+</body>
+</html>
